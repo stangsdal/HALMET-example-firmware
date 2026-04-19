@@ -73,13 +73,12 @@ bool alarm_states[4] = {false, false, false, false};
 const adsGain_t kADS1115Gain = GAIN_ONE;
 
 // DS1603L tuning values
-const uint8_t kDS1603LTxPin = 17;
-const uint8_t kDS1603LRxPin = 16;
+const uint8_t kDS1603LTxPin = 16;
+const uint8_t kDS1603LRxPin = 17;
 const uint16_t kDS1603LTankHeightMm = 1000;
 const uint8_t kDS1603LFilterSize = 15;
 const unsigned long kDS1603LReadIntervalMs = 2000;
-const char* kDS1603LSignalKPath = "tanks.main.distance";
-const char* kDS1603LSignalKDisplayName = "DS1603L Distance";
+const char* kDS1603LSignalKPath = "/tanks/main/distance";
 const char* kDS1603LSignalKDescription = "DS1603L measured distance";
 
 /////////////////////////////////////////////////////////////////////
@@ -241,7 +240,7 @@ void setup() {
   // a2_voltage->connect_to(a2_distance);
 
   a2_voltage->connect_to(
-      new SKOutputFloat("sensors.a2.voltage", "Analog Voltage A2",
+      new SKOutputFloat("/sensors/a2/voltage",
                         new SKMetadata("V", "Analog Voltage A2")));
   // Example of how to output the distance value to Signal K.
   // a2_distance->connect_to(
@@ -318,15 +317,16 @@ void setup() {
   ///////////////////////////////////////////////////////////////////
   // DS1603L ultrasonic sensor
   auto ds1603l_config = std::make_shared<DS1603LConfig>();
-    ds1603l_config->tx_pin = kDS1603LTxPin;
-    ds1603l_config->rx_pin = kDS1603LRxPin;
-    ds1603l_config->tank_height_mm = kDS1603LTankHeightMm;
-    ds1603l_config->filter_size = kDS1603LFilterSize;
+  ds1603l_config->tx_pin = kDS1603LTxPin;
+  ds1603l_config->rx_pin = kDS1603LRxPin;
+  ds1603l_config->read_timeout_ms = 500;
+  ds1603l_config->tank_height_mm = kDS1603LTankHeightMm;
+  ds1603l_config->filter_size = kDS1603LFilterSize;
 
   // Read at 2-second intervals and publish distance in meters.
-    auto ds1603l_sensor = new DS1603LSensor(ds1603l_config, kDS1603LReadIntervalMs);
+  auto ds1603l_sensor = new DS1603LSensor(ds1603l_config, kDS1603LReadIntervalMs);
   ds1603l_sensor->connect_to(new SKOutputFloat(
-      kDS1603LSignalKPath, kDS1603LSignalKDisplayName,
+      kDS1603LSignalKPath,
       new SKMetadata("m", kDS1603LSignalKDescription)));
 
   ///////////////////////////////////////////////////////////////////
