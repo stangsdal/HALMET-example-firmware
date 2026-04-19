@@ -12,6 +12,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <NMEA2000_esp32.h>
+#include <memory>
 
 #include "n2k_senders.h"
 #include "sensesp/net/discovery.h"
@@ -32,6 +33,13 @@
 #include "halmet_digital.h"
 #include "halmet_display.h"
 #include "halmet_serial.h"
+#if __has_include("DS1603LSensor.h")
+#include "DS1603LSensor.h"
+#elif __has_include("../components/sensesp_ds1603l_sensor/include/DS1603LSensor.h")
+#include "../components/sensesp_ds1603l_sensor/include/DS1603LSensor.h"
+#else
+#error "DS1603LSensor.h not found. Verify components/sensesp_ds1603l_sensor is available."
+#endif
 #include "sensesp/net/http_server.h"
 #include "sensesp/net/networking.h"
 
@@ -64,6 +72,16 @@ bool alarm_states[4] = {false, false, false, false};
 
 const adsGain_t kADS1115Gain = GAIN_ONE;
 
+// DS1603L tuning values
+const uint8_t kDS1603LTxPin = 17;
+const uint8_t kDS1603LRxPin = 16;
+const uint16_t kDS1603LTankHeightMm = 1000;
+const uint8_t kDS1603LFilterSize = 15;
+const unsigned long kDS1603LReadIntervalMs = 2000;
+const char* kDS1603LSignalKPath = "tanks.main.distance";
+const char* kDS1603LSignalKDisplayName = "DS1603L Distance";
+const char* kDS1603LSignalKDescription = "DS1603L measured distance";
+
 /////////////////////////////////////////////////////////////////////
 // Test output pin configuration. If ENABLE_TEST_OUTPUT_PIN is defined,
 // GPIO 33 will output a pulse wave at 380 Hz with a 50% duty cycle.
@@ -94,10 +112,10 @@ void setup() {
   BUILDER_CLASS builder;
   sensesp_app = (&builder)
                     // EDIT: Set a custom hostname for the app.
-                    ->set_hostname("halmet")
+                    ->set_hostname("BoatMeter")
                     // EDIT: Optionally, hard-code the WiFi and Signal K server
                     // settings. This is normally not needed.
-                    //->set_wifi("My WiFi SSID", "my_wifi_password")
+                    ->set_wifi_client("Stangsdal", "CarpeDiem")
                     //->set_sk_server("192.168.10.3", 80)
                     // EDIT: Enable OTA updates with a password.
                     //->enable_ota("my_ota_password")
@@ -296,6 +314,20 @@ void setup() {
     tacho_d1_frequency->connect_to(new LambdaConsumer<float>(
         [](float value) { PrintValue(display, 3, "RPM D1", 60 * value); }));
   }
+
+  ///////////////////////////////////////////////////////////////////
+  // DS1603L ultrasonic sensor
+  auto ds1603l_config = std::make_shared<DS1603LConfig>();
+    ds1603l_config->tx_pin = kDS1603LTxPin;
+    ds1603l_config->rx_pin = kDS1603LRxPin;
+    ds1603l_config->tank_height_mm = kDS1603LTankHeightMm;
+    ds1603l_config->filter_size = kDS1603LFilterSize;
+
+  // Read at 2-second intervals and publish distance in meters.
+    auto ds1603l_sensor = new DS1603LSensor(ds1603l_config, kDS1603LReadIntervalMs);
+  ds1603l_sensor->connect_to(new SKOutputFloat(
+      kDS1603LSignalKPath, kDS1603LSignalKDisplayName,
+      new SKMetadata("m", kDS1603LSignalKDescription)));
 
   ///////////////////////////////////////////////////////////////////
   // Display setup

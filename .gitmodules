@@ -1,0 +1,3 @@
+[submodule "components/sensesp_ds1603l_sensor"]
+	path = components/sensesp_ds1603l_sensor
+	url = https://github.com/stangsdal/sensesp-ds1603l-sensor.git
