@@ -1,5 +1,12 @@
 {
     "files.associations": {
         "new": "cpp"
+    },
+    "idf.currentSetup": "/Users/peter/esp/v5.5.1/esp-idf",
+    "idf.port": "/dev/tty.usbserial-201110",
+    "chat.tools.terminal.autoApprove": {
+        "git add": true,
+        "git commit": true,
+        "git push": true
     }
 }
